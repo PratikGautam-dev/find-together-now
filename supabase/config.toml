@@ -1,1 +1,4 @@
 project_id = "wsphhlzlnhqmtvkdrnjy"
+
+[functions.processFootage]
+verify_jwt = false

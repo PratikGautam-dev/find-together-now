@@ -14,7 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      face_embeddings: {
+        Row: {
+          case_id: string
+          created_at: string
+          embedding: Json
+          id: string
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          embedding: Json
+          id?: string
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          embedding?: Json
+          id?: string
+        }
+        Relationships: []
+      }
+      matches: {
+        Row: {
+          case_id: string
+          confidence: number
+          frame_timestamp: number
+          id: string
+          processed_at: string
+        }
+        Insert: {
+          case_id: string
+          confidence: number
+          frame_timestamp: number
+          id?: string
+          processed_at?: string
+        }
+        Update: {
+          case_id?: string
+          confidence?: number
+          frame_timestamp?: number
+          id?: string
+          processed_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, Calendar, Eye, Share2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import MatchBadge from './MatchBadge';
+import { supabase } from '@/integrations/supabase/client';
 
 interface MissingPersonCardProps {
   id: string;
@@ -30,6 +32,50 @@ const MissingPersonCard: React.FC<MissingPersonCardProps> = ({
   description,
   className
 }) => {
+  const [matchStatus, setMatchStatus] = useState<'processing' | 'matched' | 'no-match' | null>(null);
+  const [latestMatch, setLatestMatch] = useState<any>(null);
+
+  useEffect(() => {
+    // Subscribe to real-time matches for this case
+    const channel = supabase
+      .channel('matches-channel')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'matches',
+          filter: `case_id=eq.${id}`
+        },
+        (payload) => {
+          console.log('New match found:', payload);
+          setMatchStatus('matched');
+          setLatestMatch(payload.new);
+        }
+      )
+      .subscribe();
+
+    // Check for existing matches
+    const checkExistingMatches = async () => {
+      const { data: matches } = await supabase
+        .from('matches')
+        .select('*')
+        .eq('case_id', id)
+        .order('confidence', { ascending: false })
+        .limit(1);
+
+      if (matches && matches.length > 0) {
+        setMatchStatus('matched');
+        setLatestMatch(matches[0]);
+      }
+    };
+
+    checkExistingMatches();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id]);
   const getStatusBadge = () => {
     switch (status) {
       case 'found':
@@ -60,8 +106,14 @@ const MissingPersonCard: React.FC<MissingPersonCardProps> = ({
           alt={`${name} - Missing Person`}
           className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-200"
         />
-        <div className="absolute top-3 right-3">
+        <div className="absolute top-3 right-3 flex flex-col gap-2">
           {getStatusBadge()}
+          {matchStatus && (
+            <MatchBadge 
+              status={matchStatus} 
+              confidence={latestMatch?.confidence} 
+            />
+          )}
         </div>
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
           <h3 className="text-white font-semibold text-lg">{name}</h3>
