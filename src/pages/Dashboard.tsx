@@ -203,8 +203,8 @@ const Dashboard = () => {
                   <span className="font-semibold">432</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Processing</span>
-                  <Badge variant="secondary">23</Badge>
+                  <span className="text-sm text-muted-foreground">AI Matches</span>
+                  <Badge variant="secondary">3 pending</Badge>
                 </div>
               </div>
             </CardContent>

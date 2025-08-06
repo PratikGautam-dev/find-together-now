@@ -11,6 +11,8 @@ export interface Match {
   frame_timestamp: number;
   confidence: number;
   processed_at: string;
+  status: 'pending' | 'verified' | 'rejected';
+  admin_comment?: string;
 }
 
 export interface ProcessFootageRequest {

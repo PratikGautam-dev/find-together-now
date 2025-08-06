@@ -37,25 +37,31 @@ export type Database = {
       }
       matches: {
         Row: {
+          admin_comment: string | null
           case_id: string
           confidence: number
           frame_timestamp: number
           id: string
           processed_at: string
+          status: string | null
         }
         Insert: {
+          admin_comment?: string | null
           case_id: string
           confidence: number
           frame_timestamp: number
           id?: string
           processed_at?: string
+          status?: string | null
         }
         Update: {
+          admin_comment?: string | null
           case_id?: string
           confidence?: number
           frame_timestamp?: number
           id?: string
           processed_at?: string
+          status?: string | null
         }
         Relationships: []
       }
