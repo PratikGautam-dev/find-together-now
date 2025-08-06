@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/components/ui/use-toast';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -22,10 +24,61 @@ const Register = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Registration attempt:', formData);
+    
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: "Password Mismatch",
+        description: "Passwords do not match. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    
+    try {
+      const { error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            role: formData.role,
+            organization: formData.organization,
+          }
+        }
+      });
+
+      if (error) {
+        toast({
+          title: "Registration Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Registration Successful",
+          description: "Please check your email to confirm your account.",
+        });
+        navigate('/login');
+      }
+    } catch (error) {
+      toast({
+        title: "Registration Failed",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -179,8 +232,8 @@ const Register = () => {
                   </p>
                 </div>
 
-                <Button type="submit" variant="hero" className="w-full">
-                  Create Account
+                <Button type="submit" variant="hero" className="w-full" disabled={loading}>
+                  {loading ? "Creating Account..." : "Create Account"}
                 </Button>
               </form>
 

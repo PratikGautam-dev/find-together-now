@@ -10,6 +10,7 @@ import SubmitCase from "./pages/SubmitCase";
 import Dashboard from "./pages/Dashboard";
 import UploadFootage from "./pages/UploadFootage";
 import AdminMatches from "./pages/AdminMatches";
+import LegalHelp from "./pages/LegalHelp";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/upload-footage" element={<UploadFootage />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/admin/matches" element={<AdminMatches />} />
+          <Route path="/legal-help" element={<LegalHelp />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

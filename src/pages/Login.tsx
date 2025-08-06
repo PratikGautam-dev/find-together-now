@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/components/ui/use-toast';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -15,10 +17,42 @@ const Login = () => {
     password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Login attempt:', formData);
+    setLoading(true);
+    
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (error) {
+        toast({
+          title: "Login Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Welcome back!",
+          description: "You have been logged in successfully.",
+        });
+        navigate('/dashboard');
+      }
+    } catch (error) {
+      toast({
+        title: "Login Failed",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -94,8 +128,8 @@ const Login = () => {
                   </Link>
                 </div>
 
-                <Button type="submit" variant="hero" className="w-full">
-                  Sign In
+                <Button type="submit" variant="hero" className="w-full" disabled={loading}>
+                  {loading ? "Signing In..." : "Sign In"}
                 </Button>
               </form>
 
