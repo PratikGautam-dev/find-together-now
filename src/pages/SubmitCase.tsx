@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/components/ui/use-toast';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -23,11 +26,86 @@ const SubmitCase = () => {
     distinguishingFeatures: '',
     photo: null as File | null
   });
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
-    console.log('Submitting case:', formData);
+    setLoading(true);
+
+    try {
+      // Check if user is authenticated
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to submit a case.",
+          variant: "destructive",
+        });
+        navigate('/login');
+        return;
+      }
+
+      let photoUrl = null;
+
+      // Upload photo if provided
+      if (formData.photo) {
+        const fileName = `${Date.now()}-${formData.photo.name}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('footage')
+          .upload(fileName, formData.photo);
+
+        if (uploadError) {
+          throw uploadError;
+        }
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('footage')
+          .getPublicUrl(fileName);
+        
+        photoUrl = publicUrl;
+      }
+
+      // Insert case into database
+      const { error } = await supabase
+        .from('cases')
+        .insert({
+          user_id: user.id,
+          name: formData.name,
+          age: parseInt(formData.age),
+          gender: formData.gender,
+          last_seen_location: formData.lastSeenLocation,
+          last_seen_date: formData.lastSeenDate,
+          contact_name: formData.contactName,
+          contact_phone: formData.contactPhone,
+          contact_email: formData.contactEmail,
+          description: formData.description,
+          distinguishing_features: formData.distinguishingFeatures,
+          photo_url: photoUrl,
+          status: 'pending'
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Case Submitted Successfully",
+        description: "Your missing person case has been submitted for review.",
+      });
+
+      navigate('/dashboard');
+    } catch (error: any) {
+      toast({
+        title: "Submission Failed",
+        description: error.message || "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -231,11 +309,11 @@ const SubmitCase = () => {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-border">
-                  <Button type="button" variant="outline" className="flex-1">
+                  <Button type="button" variant="outline" className="flex-1" disabled={loading}>
                     Save as Draft
                   </Button>
-                  <Button type="submit" variant="hero" className="flex-1">
-                    Submit Case
+                  <Button type="submit" variant="hero" className="flex-1" disabled={loading}>
+                    {loading ? "Submitting..." : "Submit Case"}
                   </Button>
                 </div>
               </form>
