@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      cases: {
+        Row: {
+          age: number
+          contact_email: string
+          contact_name: string
+          contact_phone: string
+          created_at: string
+          description: string | null
+          distinguishing_features: string | null
+          gender: string
+          id: string
+          last_seen_date: string
+          last_seen_location: string
+          name: string
+          photo_url: string | null
+          status: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          age: number
+          contact_email: string
+          contact_name: string
+          contact_phone: string
+          created_at?: string
+          description?: string | null
+          distinguishing_features?: string | null
+          gender: string
+          id?: string
+          last_seen_date: string
+          last_seen_location: string
+          name: string
+          photo_url?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          age?: number
+          contact_email?: string
+          contact_name?: string
+          contact_phone?: string
+          created_at?: string
+          description?: string | null
+          distinguishing_features?: string | null
+          gender?: string
+          id?: string
+          last_seen_date?: string
+          last_seen_location?: string
+          name?: string
+          photo_url?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       face_embeddings: {
         Row: {
           case_id: string
