@@ -6,6 +6,7 @@ import { MapPin, Calendar, Eye, Share2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import MatchBadge from './MatchBadge';
 import { supabase } from '@/integrations/supabase/client';
+import { FaceMatch } from '@/types/FaceMatch';
 
 interface MissingPersonCardProps {
   id: string;
@@ -32,8 +33,7 @@ const MissingPersonCard: React.FC<MissingPersonCardProps> = ({
   description,
   className
 }) => {
-  const [matchStatus, setMatchStatus] = useState<'processing' | 'matched' | 'no-match' | null>(null);
-  const [latestMatch, setLatestMatch] = useState<any>(null);
+  const [latestMatch, setLatestMatch] = useState<FaceMatch | null>(null);
 
   useEffect(() => {
     // Subscribe to real-time matches for this case
@@ -49,8 +49,7 @@ const MissingPersonCard: React.FC<MissingPersonCardProps> = ({
         },
         (payload) => {
           console.log('New match found:', payload);
-          setMatchStatus('matched');
-          setLatestMatch(payload.new);
+          setLatestMatch(payload.new as FaceMatch);
         }
       )
       .subscribe();
@@ -65,8 +64,7 @@ const MissingPersonCard: React.FC<MissingPersonCardProps> = ({
         .limit(1);
 
       if (matches && matches.length > 0) {
-        setMatchStatus('matched');
-        setLatestMatch(matches[0]);
+        setLatestMatch(matches[0] as FaceMatch);
       }
     };
 
@@ -108,12 +106,7 @@ const MissingPersonCard: React.FC<MissingPersonCardProps> = ({
         />
         <div className="absolute top-3 right-3 flex flex-col gap-2">
           {getStatusBadge()}
-          {matchStatus && (
-            <MatchBadge 
-              status={matchStatus} 
-              confidence={latestMatch?.confidence} 
-            />
-          )}
+          <MatchBadge match={latestMatch} />
         </div>
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
           <h3 className="text-white font-semibold text-lg">{name}</h3>
