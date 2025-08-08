@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import MissingPersonCard from '@/components/MissingPersonCard';
@@ -86,16 +87,16 @@ const Index = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="xl" variant="hope" className="text-lg" asChild>
-              <a href="/submit-case">
+              <Link to="/submit-case">
                 <Plus className="w-5 h-5 mr-2" />
                 Submit a Case
-              </a>
+              </Link>
             </Button>
             <Button size="xl" variant="outline" className="text-lg border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10" asChild>
-              <a href="/report-sighting">
+              <Link to="/report-sighting">
                 <Eye className="w-5 h-5 mr-2" />
                 Report a Sighting
-              </a>
+              </Link>
             </Button>
           </div>
         </div>
