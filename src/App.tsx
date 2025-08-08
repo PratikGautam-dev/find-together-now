@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import SubmitCase from "./pages/SubmitCase";
+import ReportSighting from "./pages/ReportSighting";
 import Dashboard from "./pages/Dashboard";
 import UploadFootage from "./pages/UploadFootage";
 import AdminMatches from "./pages/AdminMatches";
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/submit-case" element={<SubmitCase />} />
+          <Route path="/report-sighting" element={<ReportSighting />} />
           <Route path="/upload-footage" element={<UploadFootage />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/admin/matches" element={<AdminMatches />} />

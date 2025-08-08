@@ -85,13 +85,17 @@ const Index = () => {
             A community-driven platform connecting families, volunteers, and law enforcement to find missing persons through advanced technology and collective effort.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="xl" variant="hope" className="text-lg">
-              <Plus className="w-5 h-5 mr-2" />
-              Submit a Case
+            <Button size="xl" variant="hope" className="text-lg" asChild>
+              <a href="/submit-case">
+                <Plus className="w-5 h-5 mr-2" />
+                Submit a Case
+              </a>
             </Button>
-            <Button size="xl" variant="outline" className="text-lg border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10">
-              <Eye className="w-5 h-5 mr-2" />
-              Report a Sighting
+            <Button size="xl" variant="outline" className="text-lg border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10" asChild>
+              <a href="/report-sighting">
+                <Eye className="w-5 h-5 mr-2" />
+                Report a Sighting
+              </a>
             </Button>
           </div>
         </div>
