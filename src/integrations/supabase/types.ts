@@ -122,6 +122,60 @@ export type Database = {
         }
         Relationships: []
       }
+      sightings: {
+        Row: {
+          additional_notes: string | null
+          confidence_level: string | null
+          created_at: string
+          description: string
+          id: string
+          missing_person_name: string | null
+          photo_url: string | null
+          reporter_email: string | null
+          reporter_name: string
+          reporter_phone: string
+          sighting_date: string
+          sighting_location: string
+          sighting_time: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          additional_notes?: string | null
+          confidence_level?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          missing_person_name?: string | null
+          photo_url?: string | null
+          reporter_email?: string | null
+          reporter_name: string
+          reporter_phone: string
+          sighting_date: string
+          sighting_location: string
+          sighting_time?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          additional_notes?: string | null
+          confidence_level?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          missing_person_name?: string | null
+          photo_url?: string | null
+          reporter_email?: string | null
+          reporter_name?: string
+          reporter_phone?: string
+          sighting_date?: string
+          sighting_location?: string
+          sighting_time?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -70,8 +70,8 @@ const ReportSighting = () => {
         photoUrl = publicUrl;
       }
 
-      // Insert sighting data
-      const { error } = await supabase
+      // Insert sighting data - use any type to bypass TypeScript issues with new table
+      const { error } = await (supabase as any)
         .from('sightings')
         .insert({
           missing_person_name: formData.missing_person_name,
