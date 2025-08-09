@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Upload, User, MapPin, Calendar, Phone, FileText } from 'lucide-react';
+import { ToastAction } from '@/components/ui/toast';
 
 const SubmitCase = () => {
   const [formData, setFormData] = useState({
@@ -68,8 +69,8 @@ const SubmitCase = () => {
         photoUrl = publicUrl;
       }
 
-      // Insert case into database
-      const { error } = await supabase
+      // Insert case into database and get ID
+      const { data: newCase, error } = await supabase
         .from('cases')
         .insert({
           user_id: user.id,
@@ -85,15 +86,24 @@ const SubmitCase = () => {
           distinguishing_features: formData.distinguishingFeatures,
           photo_url: photoUrl,
           status: 'pending'
-        });
+        })
+        .select('id')
+        .single();
 
       if (error) {
         throw error;
       }
 
+      const caseId = newCase?.id as string;
+
       toast({
         title: "Case Submitted Successfully",
-        description: "Your missing person case has been submitted for review.",
+        description: `Case ID: ${caseId}. Use this when uploading related footage.`,
+        action: (
+          <ToastAction altText="Copy Case ID" onClick={() => navigator.clipboard.writeText(caseId)}>
+            Copy ID
+          </ToastAction>
+        ),
       });
 
       navigate('/dashboard');

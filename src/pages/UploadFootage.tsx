@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { Upload, Video, MapPin, Calendar, FileText, Brain, CheckCircle, AlertCir
 import { supabase } from '@/integrations/supabase/client';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
+import { useSearchParams } from 'react-router-dom';
 
 const UploadFootage = () => {
   const [formData, setFormData] = useState({
@@ -25,6 +26,13 @@ const UploadFootage = () => {
   const [progress, setProgress] = useState(0);
   const [processingStatus, setProcessingStatus] = useState<'idle' | 'uploading' | 'processing' | 'completed' | 'failed'>('idle');
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  useEffect(() => {
+    const cid = searchParams.get('caseId');
+    if (cid) {
+      setFormData(prev => ({ ...prev, caseId: cid }));
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
