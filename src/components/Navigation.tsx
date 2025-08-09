@@ -1,12 +1,27 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Menu, X, Search, Heart, MapPin } from 'lucide-react';
-import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const navigate = useNavigate();
 
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session);
+    });
+    supabase.auth.getSession().then(({ data }) => setIsLoggedIn(!!data.session));
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    localStorage.removeItem('isAdmin');
+    navigate('/');
+  };
   return (
     <header className="bg-background/95 backdrop-blur-sm border-b border-border sticky top-0 z-50 shadow-soft">
       <nav className="container mx-auto px-4 py-4">
@@ -46,12 +61,18 @@ const Navigation = () => {
 
           {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center space-x-3">
-            <Button variant="ghost" asChild>
-              <Link to="/login">Login</Link>
-            </Button>
-            <Button variant="hero" asChild>
-              <Link to="/register">Register</Link>
-            </Button>
+            {isLoggedIn ? (
+              <Button variant="ghost" onClick={handleLogout}>Logout</Button>
+            ) : (
+              <>
+                <Button variant="ghost" asChild>
+                  <Link to="/login">Login</Link>
+                </Button>
+                <Button variant="hero" asChild>
+                  <Link to="/register">Register</Link>
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -117,12 +138,18 @@ const Navigation = () => {
                 Legal Help
               </Link>
               <div className="flex flex-col space-y-2 pt-4 border-t border-border">
-                <Button variant="ghost" asChild>
-                  <Link to="/login" onClick={() => setIsMenuOpen(false)}>Login</Link>
-                </Button>
-                <Button variant="hero" asChild>
-                  <Link to="/register" onClick={() => setIsMenuOpen(false)}>Register</Link>
-                </Button>
+                {isLoggedIn ? (
+                  <Button variant="ghost" onClick={() => { setIsMenuOpen(false); handleLogout(); }}>Logout</Button>
+                ) : (
+                  <>
+                    <Button variant="ghost" asChild>
+                      <Link to="/login" onClick={() => setIsMenuOpen(false)}>Login</Link>
+                    </Button>
+                    <Button variant="hero" asChild>
+                      <Link to="/register" onClick={() => setIsMenuOpen(false)}>Register</Link>
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </div>

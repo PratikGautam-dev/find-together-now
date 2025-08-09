@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import StatsCard from '@/components/StatsCard';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +20,28 @@ import {
 } from 'lucide-react';
 
 const Dashboard = () => {
+  type Case = { id: string; name: string; status: string; created_at: string };
+  const [cases, setCases] = useState<Case[]>([]);
+  const [loadingCases, setLoadingCases] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setCases([]); setLoadingCases(false); return; }
+      const { data, error } = await supabase
+        .from('cases')
+        .select('id,name,status,created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      if (!mounted) return;
+      if (error) { setCases([]); }
+      else { setCases(data as Case[]); }
+      setLoadingCases(false);
+    })();
+    return () => { mounted = false; };
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -71,9 +94,29 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="p-3 rounded-lg border border-border text-center text-muted-foreground">
-                No recent activity yet.
-              </div>
+              {loadingCases ? (
+                <div className="p-3 rounded-lg border border-border text-center text-muted-foreground">
+                  Loading your cases...
+                </div>
+              ) : cases.length === 0 ? (
+                <div className="p-3 rounded-lg border border-border text-center text-muted-foreground">
+                  No cases yet. Submit your first case to see it here.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {cases.map((c) => (
+                    <div key={c.id} className="flex items-center justify-between rounded-lg border border-border p-3">
+                      <div>
+                        <div className="font-medium">{c.name}</div>
+                        <div className="text-xs text-muted-foreground">ID: {c.id}</div>
+                      </div>
+                      <Badge variant={c.status === 'active' ? 'default' : 'secondary'} className="capitalize">
+                        {c.status}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
