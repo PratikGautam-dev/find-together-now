@@ -37,31 +37,27 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatsCard
             title="Total Cases"
-            value="1,247"
+            value="—"
             icon={Users}
             variant="primary"
-            trend={{ value: 5, isPositive: false }}
           />
           <StatsCard
             title="Successfully Found"
-            value="892"
+            value="—"
             icon={Heart}
             variant="success"
-            trend={{ value: 12, isPositive: true }}
           />
           <StatsCard
             title="Community Tips"
-            value="5,634"
+            value="—"
             icon={Eye}
             variant="warning"
-            trend={{ value: 23, isPositive: true }}
           />
           <StatsCard
             title="Success Rate"
-            value="71.6%"
+            value="—"
             icon={TrendingUp}
             variant="success"
-            trend={{ value: 3, isPositive: true }}
           />
         </div>
 
@@ -75,45 +71,8 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {[
-                  {
-                    type: 'found',
-                    message: 'Emma Rodriguez found safe in Miami Beach',
-                    time: '2 hours ago',
-                    variant: 'success'
-                  },
-                  {
-                    type: 'tip',
-                    message: 'New sighting reported for Michael Chen in Brooklyn',
-                    time: '4 hours ago',
-                    variant: 'warning'
-                  },
-                  {
-                    type: 'case',
-                    message: 'New case submitted: David Thompson, Phoenix',
-                    time: '6 hours ago',
-                    variant: 'default'
-                  },
-                  {
-                    type: 'footage',
-                    message: 'Video footage uploaded for Sarah Johnson case',
-                    time: '8 hours ago',
-                    variant: 'default'
-                  }
-                ].map((activity, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 rounded-lg border border-border">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-2 h-2 rounded-full ${
-                        activity.variant === 'success' ? 'bg-success' :
-                        activity.variant === 'warning' ? 'bg-warning' :
-                        'bg-primary'
-                      }`} />
-                      <span className="text-sm text-foreground">{activity.message}</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground">{activity.time}</span>
-                  </div>
-                ))}
+              <div className="p-3 rounded-lg border border-border text-center text-muted-foreground">
+                No recent activity yet.
               </div>
             </CardContent>
           </Card>
@@ -127,32 +86,8 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {[
-                  { name: 'Sarah M.', tips: 23, rank: 1 },
-                  { name: 'Michael K.', tips: 19, rank: 2 },
-                  { name: 'Jennifer L.', tips: 15, rank: 3 },
-                  { name: 'David R.', tips: 12, rank: 4 },
-                  { name: 'Lisa T.', tips: 10, rank: 5 }
-                ].map((contributor, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                        contributor.rank === 1 ? 'bg-yellow-100 text-yellow-800' :
-                        contributor.rank === 2 ? 'bg-gray-100 text-gray-800' :
-                        contributor.rank === 3 ? 'bg-orange-100 text-orange-800' :
-                        'bg-muted text-muted-foreground'
-                      }`}>
-                        {contributor.rank}
-                      </div>
-                      <span className="text-sm font-medium">{contributor.name}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Star className="w-3 h-3 text-warning" />
-                      <span className="text-xs text-muted-foreground">{contributor.tips}</span>
-                    </div>
-                  </div>
-                ))}
+              <div className="p-3 rounded-lg border border-border text-center text-muted-foreground">
+                No contributors yet.
               </div>
             </CardContent>
           </Card>
@@ -171,15 +106,15 @@ const Dashboard = () => {
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Active States</span>
-                  <span className="font-semibold">47</span>
+                  <span className="font-semibold">—</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Major Cities</span>
-                  <span className="font-semibold">156</span>
+                  <span className="font-semibold">—</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">International</span>
-                  <span className="font-semibold">12</span>
+                  <span className="font-semibold">—</span>
                 </div>
               </div>
             </CardContent>
@@ -196,15 +131,15 @@ const Dashboard = () => {
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Photos</span>
-                  <span className="font-semibold">2,847</span>
+                  <span className="font-semibold">—</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Videos</span>
-                  <span className="font-semibold">432</span>
+                  <span className="font-semibold">—</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">AI Matches</span>
-                  <Badge variant="secondary">3 pending</Badge>
+                  <Badge variant="secondary">—</Badge>
                 </div>
               </div>
             </CardContent>
@@ -221,15 +156,15 @@ const Dashboard = () => {
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Avg. Response</span>
-                  <span className="font-semibold">2.3 hrs</span>
+                  <span className="font-semibold">—</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Fastest</span>
-                  <span className="font-semibold text-success">12 min</span>
+                  <span className="font-semibold text-success">—</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Emergency</span>
-                  <span className="font-semibold text-destructive">&lt; 30 min</span>
+                  <span className="font-semibold text-destructive">—</span>
                 </div>
               </div>
             </CardContent>

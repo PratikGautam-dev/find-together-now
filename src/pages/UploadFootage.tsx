@@ -176,16 +176,12 @@ const UploadFootage = () => {
                 {/* Case Selection */}
                 <div className="space-y-2">
                   <Label htmlFor="caseId">Related Case ID *</Label>
-                  <Select value={formData.caseId} onValueChange={(value) => setFormData(prev => ({ ...prev, caseId: value }))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a case" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="case-001">John Doe - Case #001</SelectItem>
-                      <SelectItem value="case-002">Sarah Wilson - Case #002</SelectItem>
-                      <SelectItem value="case-003">Michael Chen - Case #003</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    id="caseId"
+                    value={formData.caseId}
+                    onChange={(e) => setFormData(prev => ({ ...prev, caseId: e.target.value }))}
+                    placeholder="Enter related case ID"
+                  />
                 </div>
 
                 {/* Location and Time */}

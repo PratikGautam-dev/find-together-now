@@ -10,53 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Search, Filter, Users, Eye, Heart, MapPin, Plus, AlertTriangle } from 'lucide-react';
 
-// Mock data for missing persons
-const mockMissingPersons = [
-  {
-    id: '1',
-    name: 'Sarah Johnson',
-    age: 24,
-    lastSeenLocation: 'Downtown Seattle, WA',
-    lastSeenDate: '2024-01-15',
-    photo: 'https://images.unsplash.com/photo-1494790108755-2616b612b765?w=400&h=400&fit=crop&crop=face',
-    gender: 'female' as const,
-    status: 'active' as const,
-    description: 'Last seen wearing blue jeans and a red jacket. Has a small scar on left cheek.'
-  },
-  {
-    id: '2',
-    name: 'Michael Chen',
-    age: 16,
-    lastSeenLocation: 'Central Park, New York, NY',
-    lastSeenDate: '2024-01-12',
-    photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face',
-    gender: 'male' as const,
-    status: 'active' as const,
-    description: 'Missing teenager, last seen with school backpack. Wearing glasses.'
-  },
-  {
-    id: '3',
-    name: 'Emma Rodriguez',
-    age: 8,
-    lastSeenLocation: 'Miami Beach, FL',
-    lastSeenDate: '2024-01-10',
-    photo: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop&crop=face',
-    gender: 'female' as const,
-    status: 'found' as const,
-    description: 'Found safe! Thank you to everyone who helped in the search.'
-  },
-  {
-    id: '4',
-    name: 'David Thompson',
-    age: 45,
-    lastSeenLocation: 'Phoenix, AZ',
-    lastSeenDate: '2024-01-08',
-    photo: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face',
-    gender: 'male' as const,
-    status: 'active' as const,
-    description: 'Missing adult with medical condition. Last seen driving blue Honda Civic.'
-  }
-];
+// Removed mock data; will display empty state until real data is loaded
+const mockMissingPersons: any[] = [];
 
 const Index = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -102,41 +57,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-12 bg-muted/50">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <StatsCard
-              title="Active Cases"
-              value="1,247"
-              icon={Users}
-              variant="warning"
-              trend={{ value: 12, isPositive: false }}
-            />
-            <StatsCard
-              title="People Found"
-              value="892"
-              icon={Heart}
-              variant="success"
-              trend={{ value: 8, isPositive: true }}
-            />
-            <StatsCard
-              title="Community Tips"
-              value="5,634"
-              icon={Eye}
-              variant="primary"
-              trend={{ value: 15, isPositive: true }}
-            />
-            <StatsCard
-              title="Success Rate"
-              value="71.6%"
-              icon={AlertTriangle}
-              variant="success"
-              trend={{ value: 3, isPositive: true }}
-            />
-          </div>
-        </div>
-      </section>
 
       {/* Search and Filters */}
       <section className="py-8 bg-background">
