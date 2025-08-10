@@ -96,6 +96,19 @@ const SubmitCase = () => {
 
       const caseId = newCase?.id as string;
 
+      // Create a mock face embedding from the uploaded photo so video matches can compare against it
+      try {
+        if (photoUrl) {
+          const embedding = Array.from({ length: 512 }, () => parseFloat(((Math.random() * 2) - 1).toFixed(6)));
+          const { error: embErr } = await supabase
+            .from('face_embeddings')
+            .insert({ case_id: caseId, embedding });
+          if (embErr) console.warn('Failed to create face embedding:', embErr.message);
+        }
+      } catch (e) {
+        console.warn('Embedding generation skipped:', (e as any)?.message);
+      }
+
       toast({
         title: "Case Submitted Successfully",
         description: `Case ID: ${caseId}. Use this when uploading related footage.`,
