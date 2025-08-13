@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { Match } from '@/types/FaceMatch';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,16 +13,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { CheckCircle, XCircle, Eye, Filter } from 'lucide-react';
-
-interface Match {
-  id: string;
-  case_id: string;
-  frame_timestamp: number;
-  confidence: number;
-  processed_at: string;
-  status: 'pending' | 'verified' | 'rejected';
-  admin_comment?: string;
-}
 
 const AdminMatches = () => {
   const [matches, setMatches] = useState<Match[]>([]);
