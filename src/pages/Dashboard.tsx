@@ -22,8 +22,11 @@ import {
 
 const Dashboard = () => {
   type Case = { id: string; name: string; status: string; created_at: string };
+  type FootageUpload = { id: string; case_id: string; status: string; uploaded_at: string };
   const [cases, setCases] = useState<Case[]>([]);
+  const [footage, setFootage] = useState<FootageUpload[]>([]);
   const [loadingCases, setLoadingCases] = useState(true);
+  const [totalCases, setTotalCases] = useState(0);
 
   useEffect(() => {
     let mounted = true;
@@ -37,10 +40,87 @@ const Dashboard = () => {
         .order('created_at', { ascending: false });
       if (!mounted) return;
       if (error) { setCases([]); }
-      else { setCases(data as Case[]); }
+      else { setCases(data as Case[]); setTotalCases(data.length); }
+      
+      // Fetch footage uploads
+      const { data: footageData } = await supabase
+        .from('footage_uploads')
+        .select('id, case_id, status, uploaded_at')
+        .eq('user_id', user.id)
+        .order('uploaded_at', { ascending: false });
+      
+      if (footageData) setFootage(footageData as FootageUpload[]);
+      
       setLoadingCases(false);
     })();
     return () => { mounted = false; };
+  }, []);
+
+  // Real-time subscription for case updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('case-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'cases'
+        },
+        async (payload) => {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) return;
+          
+          // Re-fetch cases to update the list
+          const { data } = await supabase
+            .from('cases')
+            .select('id,name,status,created_at')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+          
+          if (data) {
+            setCases(data as Case[]);
+            setTotalCases(data.length);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // Real-time subscription for footage updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('footage-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'footage_uploads'
+        },
+        async (payload) => {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) return;
+          
+          // Re-fetch footage to update the list
+          const { data } = await supabase
+            .from('footage_uploads')
+            .select('id, case_id, status, uploaded_at')
+            .eq('user_id', user.id)
+            .order('uploaded_at', { ascending: false });
+          
+          if (data) setFootage(data as FootageUpload[]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   return (
@@ -61,7 +141,7 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatsCard
             title="Total Cases"
-            value="—"
+            value={totalCases.toString()}
             icon={Users}
             variant="primary"
           />
@@ -110,6 +190,17 @@ const Dashboard = () => {
                       <div>
                         <div className="font-medium">{c.name}</div>
                         <div className="text-xs text-muted-foreground">ID: {c.id}</div>
+                        {/* Show footage status if exists */}
+                        {footage.filter(f => f.case_id === c.id).map(f => (
+                          <div key={f.id} className="mt-1">
+                            <Badge 
+                              variant={f.status === 'done' ? 'default' : 'secondary'} 
+                              className="text-xs"
+                            >
+                              Footage: {f.status}
+                            </Badge>
+                          </div>
+                        ))}
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant={c.status === 'active' ? 'default' : 'secondary'} className="capitalize">

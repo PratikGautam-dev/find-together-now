@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "13.0.4"
@@ -91,6 +91,47 @@ export type Database = {
           id?: string
         }
         Relationships: []
+      }
+      footage_uploads: {
+        Row: {
+          case_id: string
+          error_message: string | null
+          id: string
+          processed_at: string | null
+          status: string
+          uploaded_at: string
+          user_id: string
+          video_url: string
+        }
+        Insert: {
+          case_id: string
+          error_message?: string | null
+          id?: string
+          processed_at?: string | null
+          status?: string
+          uploaded_at?: string
+          user_id: string
+          video_url: string
+        }
+        Update: {
+          case_id?: string
+          error_message?: string | null
+          id?: string
+          processed_at?: string | null
+          status?: string
+          uploaded_at?: string
+          user_id?: string
+          video_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "footage_uploads_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       matches: {
         Row: {

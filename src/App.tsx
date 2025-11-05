@@ -11,6 +11,7 @@ import ReportSighting from "./pages/ReportSighting";
 import Dashboard from "./pages/Dashboard";
 import UploadFootage from "./pages/UploadFootage";
 import AdminMatches from "./pages/AdminMatches";
+import AdminFootage from "./pages/AdminFootage";
 import LegalHelp from "./pages/LegalHelp";
 import NotFound from "./pages/NotFound";
 
@@ -31,6 +32,7 @@ const App = () => (
           <Route path="/upload-footage" element={<UploadFootage />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/admin/matches" element={<AdminMatches />} />
+          <Route path="/admin/footage" element={<AdminFootage />} />
           <Route path="/legal-help" element={<LegalHelp />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

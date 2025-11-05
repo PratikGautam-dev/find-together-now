@@ -54,6 +54,9 @@ const Navigation = () => {
             <Link to="/admin/matches" className="text-foreground hover:text-primary transition-colors">
               Admin Matches
             </Link>
+            <Link to="/admin/footage" className="text-foreground hover:text-primary transition-colors">
+              Admin Footage
+            </Link>
             <Link to="/legal-help" className="text-foreground hover:text-primary transition-colors">
               Legal Help
             </Link>
@@ -129,6 +132,13 @@ const Navigation = () => {
                 onClick={() => setIsMenuOpen(false)}
               >
                 Admin Matches
+              </Link>
+              <Link
+                to="/admin/footage"
+                className="text-foreground hover:text-primary transition-colors py-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Admin Footage
               </Link>
               <Link
                 to="/legal-help"

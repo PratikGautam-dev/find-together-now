@@ -1,194 +1,113 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, Video, MapPin, Calendar, FileText, Brain, CheckCircle, AlertCircle } from 'lucide-react';
+import { Upload, Video } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { useSearchParams } from 'react-router-dom';
-import { faceDetectionService } from '@/services/faceDetection';
 
 const UploadFootage = () => {
-  const [formData, setFormData] = useState({
-    caseId: '',
-    location: '',
-    dateTime: '',
-    comments: '',
-    video: null as File | null
-  });
+  const [caseId, setCaseId] = useState('');
+  const [videoFile, setVideoFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [processing, setProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [processingStatus, setProcessingStatus] = useState<'idle' | 'uploading' | 'processing' | 'completed' | 'failed'>('idle');
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     const cid = searchParams.get('caseId');
     if (cid) {
-      setFormData(prev => ({ ...prev, caseId: cid }));
+      setCaseId(cid);
     }
   }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.video || !formData.caseId) {
+    if (!videoFile || !caseId) {
       toast({
-        title: "Error",
-        description: "Please select a video file and case ID",
-        variant: "destructive"
+        title: 'Missing Information',
+        description: 'Please select both a case and a video file.',
+        variant: 'destructive',
       });
       return;
     }
 
     setUploading(true);
-    setProcessingStatus('uploading');
-    setProgress(5);
+    setProgress(0);
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
       // Upload video to Supabase Storage
-      const fileExt = formData.video.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `footage/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
+      const fileName = `${caseId}/${Date.now()}_${videoFile.name}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('footage')
-        .upload(filePath, formData.video);
+        .upload(fileName, videoFile);
 
-      if (uploadError) {
-        throw uploadError;
-      }
+      if (uploadError) throw uploadError;
 
-      // Get the public URL
-      const { data: urlData } = supabase.storage
+      const { data: { publicUrl } } = supabase.storage
         .from('footage')
-        .getPublicUrl(filePath);
+        .getPublicUrl(fileName);
 
-      toast({
-        title: "Upload successful",
-        description: "Video uploaded successfully. Starting real AI processing...",
-      });
-
-      setUploading(false);
-      setProcessing(true);
-      setProcessingStatus('processing');
-      setProgress(20);
-
-      // Initialize AI models
-      console.log('Initializing real AI models...');
-      await faceDetectionService.initialize();
-      setProgress(30);
-
-      // Extract frames from video using real browser-based processing
-      console.log('Extracting frames from video...');
-      const frames = await faceDetectionService.extractVideoFrames(formData.video);
       setProgress(50);
 
-      // Get existing face embeddings for comparison
-      const { data: embeddingsData } = await supabase
-        .from('face_embeddings')
-        .select('embedding')
-        .eq('case_id', formData.caseId);
+      // Create footage upload record (without processing)
+      const { error: insertError } = await supabase
+        .from('footage_uploads')
+        .insert({
+          case_id: caseId,
+          user_id: user.id,
+          video_url: publicUrl,
+          status: 'pending'
+        });
 
-      const existingEmbeddings = embeddingsData || [];
-      setProgress(60);
+      if (insertError) throw insertError;
 
-      let matchesFound = 0;
-      const similarityThreshold = 0.7;
-
-      // Process each frame with real AI face detection
-      console.log(`Processing ${frames.length} frames with real AI models...`);
-      
-      for (let i = 0; i < frames.length; i++) {
-        const frame = frames[i];
-        
-        try {
-          // Real face detection using Hugging Face models
-          const { faces } = await faceDetectionService.detectFaces(frame.imageUrl);
-          
-          console.log(`Frame ${i + 1}: Found ${faces.length} faces`);
-
-          // Compare with existing embeddings
-          for (const face of faces) {
-            for (const existing of existingEmbeddings) {
-              const similarity = faceDetectionService.calculateSimilarity(
-                face.embedding, 
-                existing.embedding as number[]
-              );
-
-              if (similarity >= similarityThreshold) {
-                console.log(`REAL AI MATCH FOUND! Similarity: ${(similarity * 100).toFixed(1)}%`);
-
-                // Create match record with real AI results
-                const { error: matchError } = await supabase
-                  .from('matches')
-                  .insert({
-                    case_id: formData.caseId,
-                    frame_timestamp: frame.timestamp,
-                    confidence: similarity,
-                    thumbnail_url: frame.imageUrl, // Using frame data URL as thumbnail
-                    frame_url: frame.imageUrl,
-                    processed_at: new Date().toISOString(),
-                    status: 'pending',
-                    processing_status: 'completed'
-                  });
-
-                if (!matchError) {
-                  matchesFound++;
-                }
-              }
-            }
-          }
-        } catch (frameError) {
-          console.error(`Error processing frame ${i + 1}:`, frameError);
-        }
-
-        // Update progress
-        const frameProgress = 60 + (i / frames.length) * 35;
-        setProgress(Math.round(frameProgress));
-      }
-
-      setProcessing(false);
-      setProcessingStatus('completed');
       setProgress(100);
 
       toast({
-        title: "Real AI Processing Complete!",
-        description: `Found ${matchesFound} potential matches using real face detection models. Results saved to database.`,
+        title: 'Upload Successful',
+        description: 'Video uploaded successfully. An admin will process it soon.',
       });
 
       // Reset form
-      setFormData({
-        caseId: '',
-        location: '',
-        dateTime: '',
-        comments: '',
-        video: null
-      });
+      setVideoFile(null);
+      setCaseId('');
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
 
-    } catch (error) {
-      console.error('Error in real AI processing:', error);
+      // Navigate to dashboard after a short delay
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 2000);
+
+    } catch (error: any) {
+      console.error('Upload error:', error);
       toast({
-        title: "Error",
-        description: "Failed to process footage with real AI. Please try again.",
-        variant: "destructive"
+        title: 'Upload Failed',
+        description: error.message || 'Failed to upload video.',
+        variant: 'destructive',
       });
+    } finally {
       setUploading(false);
-      setProcessing(false);
-      setProcessingStatus('failed');
       setProgress(0);
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
-    setFormData(prev => ({ ...prev, video: file }));
+    setVideoFile(file);
   };
 
   return (
@@ -224,6 +143,7 @@ const UploadFootage = () => {
                       Upload MP4, AVI, or MOV files (max 100MB)
                     </p>
                     <input
+                      ref={fileInputRef}
                       type="file"
                       id="video"
                       accept="video/*"
@@ -233,13 +153,13 @@ const UploadFootage = () => {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => document.getElementById('video')?.click()}
+                      onClick={() => fileInputRef.current?.click()}
                     >
                       Choose Video File
                     </Button>
-                    {formData.video && (
+                    {videoFile && (
                       <p className="text-sm text-primary mt-2">
-                        Selected: {formData.video.name}
+                        Selected: {videoFile.name}
                       </p>
                     )}
                   </div>
@@ -250,83 +170,38 @@ const UploadFootage = () => {
                   <Label htmlFor="caseId">Related Case ID *</Label>
                   <Input
                     id="caseId"
-                    value={formData.caseId}
-                    onChange={(e) => setFormData(prev => ({ ...prev, caseId: e.target.value }))}
+                    value={caseId}
+                    onChange={(e) => setCaseId(e.target.value)}
                     placeholder="Enter related case ID"
                   />
                 </div>
 
-                {/* Location and Time */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {uploading && (
                   <div className="space-y-2">
-                    <Label htmlFor="location">Location</Label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                      <Input
-                        id="location"
-                        value={formData.location}
-                        onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                        placeholder="Where was this recorded?"
-                        className="pl-10"
-                      />
+                    <div className="flex justify-between text-sm">
+                      <span>Uploading...</span>
+                      <span>{progress}%</span>
                     </div>
+                    <Progress value={progress} className="w-full" />
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="dateTime">Date & Time</Label>
-                    <div className="relative">
-                      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                      <Input
-                        id="dateTime"
-                        type="datetime-local"
-                        value={formData.dateTime}
-                        onChange={(e) => setFormData(prev => ({ ...prev, dateTime: e.target.value }))}
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Comments */}
-                <div className="space-y-2">
-                  <Label htmlFor="comments">Additional Comments</Label>
-                  <div className="relative">
-                    <FileText className="absolute left-3 top-3 text-muted-foreground w-4 h-4" />
-                    <Textarea
-                      id="comments"
-                      value={formData.comments}
-                      onChange={(e) => setFormData(prev => ({ ...prev, comments: e.target.value }))}
-                      placeholder="Any additional details about this footage..."
-                      rows={3}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
+                )}
 
                 <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-border">
-                  <Button type="button" variant="outline" className="flex-1">
-                    Save as Draft
-                  </Button>
                   <Button 
                     type="submit" 
                     variant="hero" 
                     className="flex-1"
-                    disabled={uploading || processing}
+                    disabled={uploading}
                   >
                     {uploading ? (
                       <>
                         <Upload className="w-4 h-4 mr-2 animate-pulse" />
                         Uploading...
                       </>
-                    ) : processing ? (
-                      <>
-                        <Brain className="w-4 h-4 mr-2 animate-pulse" />
-                        Processing with AI...
-                      </>
                     ) : (
                       <>
                         <Video className="w-4 h-4 mr-2" />
-                        Upload & Process
+                        Upload Footage
                       </>
                     )}
                   </Button>
@@ -335,59 +210,9 @@ const UploadFootage = () => {
             </CardContent>
           </Card>
 
-          {/* Enhanced Processing Status */}
-          {processingStatus !== 'idle' && (
-            <Card className="shadow-medium">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Brain className="w-5 h-5" />
-                  AI Face-Matching Pipeline
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Progress</span>
-                    <span>{progress}%</span>
-                  </div>
-                  <Progress value={progress} className="w-full" />
-                </div>
-                
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    {processingStatus === 'completed' ? (
-                      <CheckCircle className="w-4 h-4 text-green-500" />
-                    ) : processingStatus === 'failed' ? (
-                      <AlertCircle className="w-4 h-4 text-red-500" />
-                    ) : (
-                      <Brain className="w-4 h-4 animate-pulse text-blue-500" />
-                    )}
-                    <span className="capitalize">
-                      {processingStatus === 'uploading' ? 'Uploading video...' :
-                       processingStatus === 'processing' ? 'Running AI analysis...' :
-                       processingStatus === 'completed' ? 'Analysis complete' :
-                       processingStatus === 'failed' ? 'Processing failed' : 'Ready'}
-                    </span>
-                  </div>
-                  
-                  {processingStatus === 'processing' && (
-                    <div className="text-xs space-y-1">
-                      <div>• Loading real AI models (HuggingFace Transformers)</div>
-                      <div>• Extracting video frames in browser</div>
-                      <div>• Detecting faces with YOLOv8 face detection</div>
-                      <div>• Computing embeddings with CLIP vision model</div>
-                      <div>• Comparing with existing case embeddings</div>
-                      <div>• Saving results to database</div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
           <div className="mt-8 p-4 bg-muted/50 rounded-lg">
             <p className="text-sm text-muted-foreground">
-              <strong>Real Browser-Based AI Pipeline:</strong> Our system uses HuggingFace Transformers with YOLOv8 for face detection and CLIP for embedding generation. Processing happens directly in your browser using WebGPU acceleration for privacy and speed. All matches are compared against existing case embeddings with high accuracy.
+              <strong>Note:</strong> Your uploaded footage will be reviewed by an admin who will process it using AI face detection. You will be notified when the processing is complete and if any matches are found.
             </p>
           </div>
         </div>
