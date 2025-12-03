@@ -1,30 +1,38 @@
 /**
  * PERSON RE-IDENTIFICATION SERVICE
- * Mock implementation - paste Python pipeline integration code here
  * 
- * This service handles:
- * - Reference image feature extraction
- * - Video frame processing
- * - Person detection and matching
- * - Result formatting for admin review
+ * This service handles communication with the external Python pipeline.
+ * 
+ * Pipeline Architecture:
+ * - OSNet-IBN (512-dim feature vectors) for person re-identification
+ * - YOLOv8 for person detection
+ * - Cosine similarity for matching
+ * 
+ * Workflow:
+ * 1. User uploads video → stored in Supabase Storage
+ * 2. External Python script (running on GPU server) processes video
+ * 3. Python script POSTs results to /functions/v1/receiveReIdResults
+ * 4. Admin views results in /admin/ai-analysis
  */
 
 export interface PersonMatch {
-  frameNumber: number;
-  timestamp: number; // seconds
+  frame_number: number;
+  timestamp_seconds: number;
   similarity: number;
-  bbox: [number, number, number, number]; // x1, y1, x2, y2
-  croppedImageUrl?: string;
+  bbox: [number, number, number, number]; // [x1, y1, x2, y2]
+  cropped_image_url?: string;
 }
 
-export interface ReIdResult {
-  referencePhotoUrl: string;
-  videoUrl: string;
-  totalFramesProcessed: number;
-  totalPersonsDetected: number;
-  matches: PersonMatch[];
-  processingTime: number; // seconds
+export interface ReIdPayload {
+  case_id: string;
+  footage_id?: string;
+  reference_photo_url: string;
+  video_url: string;
+  total_frames_processed: number;
+  total_persons_detected: number;
+  processing_time_seconds: number;
   threshold: number;
+  matches: PersonMatch[];
 }
 
 export interface ProcessingStatus {
@@ -33,69 +41,105 @@ export interface ProcessingStatus {
   message: string;
 }
 
-// TODO: Paste your Python pipeline integration code below
-// This mock simulates the OSNet-IBN + YOLOv8 pipeline output
+/**
+ * Python script template for posting results to Supabase Edge Function
+ * 
+ * Usage in Google Colab/Python environment:
+ * ```python
+ * import requests
+ * 
+ * SUPABASE_URL = "https://wsphhlzlnhqmtvkdrnjy.supabase.co"
+ * 
+ * def post_reid_results(case_id, reference_photo_url, video_url, matches):
+ *     payload = {
+ *         "case_id": case_id,
+ *         "reference_photo_url": reference_photo_url,
+ *         "video_url": video_url,
+ *         "total_frames_processed": len(frames),
+ *         "total_persons_detected": total_persons,
+ *         "processing_time_seconds": processing_time,
+ *         "threshold": threshold,
+ *         "matches": [
+ *             {
+ *                 "frame_number": m['frame_num'],
+ *                 "timestamp_seconds": m['time'],
+ *                 "similarity": float(m['similarity']),
+ *                 "bbox": m['bbox'],
+ *                 "cropped_image_url": upload_cropped_image(m['image'])
+ *             }
+ *             for m in matches
+ *         ]
+ *     }
+ *     
+ *     response = requests.post(
+ *         f"{SUPABASE_URL}/functions/v1/receiveReIdResults",
+ *         json=payload,
+ *         headers={"Content-Type": "application/json"}
+ *     )
+ *     return response.json()
+ * ```
+ */
 
-export async function processVideoForReId(
+// Mock function to simulate results (for testing without Python backend)
+export async function mockProcessVideoForReId(
   referencePhotoUrl: string,
   videoUrl: string,
+  caseId: string,
   threshold: number = 0.70
-): Promise<ReIdResult> {
-  // Mock implementation - replace with actual API call
-  console.log('Processing video for person re-identification...');
+): Promise<ReIdPayload> {
+  console.log('Mock processing video for person re-identification...');
   console.log('Reference photo:', referencePhotoUrl);
   console.log('Video URL:', videoUrl);
+  console.log('Case ID:', caseId);
   console.log('Threshold:', threshold);
 
   // Simulate processing delay
   await new Promise(resolve => setTimeout(resolve, 2000));
 
-  // Mock results
+  // Mock results matching Python pipeline output format
   return {
-    referencePhotoUrl,
-    videoUrl,
-    totalFramesProcessed: 150,
-    totalPersonsDetected: 45,
+    case_id: caseId,
+    reference_photo_url: referencePhotoUrl,
+    video_url: videoUrl,
+    total_frames_processed: 150,
+    total_persons_detected: 45,
+    processing_time_seconds: 12.5,
+    threshold,
     matches: [
       {
-        frameNumber: 120,
-        timestamp: 4.0,
+        frame_number: 120,
+        timestamp_seconds: 4.0,
         similarity: 0.89,
         bbox: [100, 50, 200, 300],
-        croppedImageUrl: referencePhotoUrl // Mock - would be actual crop
+        cropped_image_url: referencePhotoUrl
       },
       {
-        frameNumber: 450,
-        timestamp: 15.0,
+        frame_number: 450,
+        timestamp_seconds: 15.0,
         similarity: 0.82,
         bbox: [150, 60, 250, 320],
-        croppedImageUrl: referencePhotoUrl
+        cropped_image_url: referencePhotoUrl
       },
       {
-        frameNumber: 780,
-        timestamp: 26.0,
+        frame_number: 780,
+        timestamp_seconds: 26.0,
         similarity: 0.76,
         bbox: [80, 40, 180, 280],
-        croppedImageUrl: referencePhotoUrl
+        cropped_image_url: referencePhotoUrl
       }
-    ],
-    processingTime: 12.5,
-    threshold
+    ]
   };
 }
 
-export async function extractFeatures(imageUrl: string): Promise<number[]> {
-  // Mock 512-dim feature vector extraction (OSNet-IBN output)
-  console.log('Extracting features from:', imageUrl);
-  
-  // Return mock 512-dimensional feature vector
-  return Array(512).fill(0).map(() => Math.random() * 2 - 1);
+// Cosine similarity (matching Python implementation)
+export function calculateCosineSimilarity(a: number[], b: number[]): number {
+  const dotProduct = a.reduce((sum, val, i) => sum + val * b[i], 0);
+  const normA = Math.sqrt(a.reduce((sum, val) => sum + val * val, 0));
+  const normB = Math.sqrt(b.reduce((sum, val) => sum + val * val, 0));
+  return dotProduct / (normA * normB);
 }
 
-export function calculateSimilarity(features1: number[], features2: number[]): number {
-  // Cosine similarity calculation
-  const dotProduct = features1.reduce((sum, a, i) => sum + a * features2[i], 0);
-  const norm1 = Math.sqrt(features1.reduce((sum, a) => sum + a * a, 0));
-  const norm2 = Math.sqrt(features2.reduce((sum, a) => sum + a * a, 0));
-  return dotProduct / (norm1 * norm2);
-}
+/**
+ * Edge Function URL for receiving results
+ */
+export const REID_ENDPOINT = 'https://wsphhlzlnhqmtvkdrnjy.supabase.co/functions/v1/receiveReIdResults';
