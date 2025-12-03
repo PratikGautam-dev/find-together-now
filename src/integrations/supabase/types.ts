@@ -163,6 +163,119 @@ export type Database = {
         }
         Relationships: []
       }
+      reid_matches: {
+        Row: {
+          admin_comment: string | null
+          admin_verified: boolean | null
+          bbox: Json | null
+          created_at: string
+          cropped_image_url: string | null
+          frame_number: number
+          id: string
+          rank: number | null
+          result_id: string
+          similarity: number
+          timestamp_seconds: number
+        }
+        Insert: {
+          admin_comment?: string | null
+          admin_verified?: boolean | null
+          bbox?: Json | null
+          created_at?: string
+          cropped_image_url?: string | null
+          frame_number: number
+          id?: string
+          rank?: number | null
+          result_id: string
+          similarity: number
+          timestamp_seconds: number
+        }
+        Update: {
+          admin_comment?: string | null
+          admin_verified?: boolean | null
+          bbox?: Json | null
+          created_at?: string
+          cropped_image_url?: string | null
+          frame_number?: number
+          id?: string
+          rank?: number | null
+          result_id?: string
+          similarity?: number
+          timestamp_seconds?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reid_matches_result_id_fkey"
+            columns: ["result_id"]
+            isOneToOne: false
+            referencedRelation: "reid_results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reid_results: {
+        Row: {
+          case_id: string
+          created_at: string
+          error_message: string | null
+          footage_id: string | null
+          id: string
+          processing_time_seconds: number | null
+          reference_photo_url: string
+          status: string | null
+          threshold: number | null
+          total_frames_processed: number | null
+          total_persons_detected: number | null
+          updated_at: string
+          video_url: string
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          error_message?: string | null
+          footage_id?: string | null
+          id?: string
+          processing_time_seconds?: number | null
+          reference_photo_url: string
+          status?: string | null
+          threshold?: number | null
+          total_frames_processed?: number | null
+          total_persons_detected?: number | null
+          updated_at?: string
+          video_url: string
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          error_message?: string | null
+          footage_id?: string | null
+          id?: string
+          processing_time_seconds?: number | null
+          reference_photo_url?: string
+          status?: string | null
+          threshold?: number | null
+          total_frames_processed?: number | null
+          total_persons_detected?: number | null
+          updated_at?: string
+          video_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reid_results_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reid_results_footage_id_fkey"
+            columns: ["footage_id"]
+            isOneToOne: false
+            referencedRelation: "footage_uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sightings: {
         Row: {
           additional_notes: string | null
