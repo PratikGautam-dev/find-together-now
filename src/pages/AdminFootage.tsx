@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Video, Play, Eye, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { useAdmin } from '@/hooks/useAdmin';
+import { Video, Play, Eye, CheckCircle, XCircle, Loader2, ShieldAlert } from 'lucide-react';
 
 interface FootageUpload {
   id: string;
@@ -26,30 +28,44 @@ const AdminFootage = () => {
   const [processing, setProcessing] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const { toast } = useToast();
+  const { isAdmin, loading: adminLoading } = useAdmin();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetchFootage();
-    
-    // Real-time subscription for footage updates
-    const channel = supabase
-      .channel('footage-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'footage_uploads'
-        },
-        () => {
-          fetchFootage();
-        }
-      )
-      .subscribe();
+    if (!adminLoading && !isAdmin) {
+      toast({
+        title: 'Access Denied',
+        description: 'You need admin privileges to access this page',
+        variant: 'destructive',
+      });
+      navigate('/');
+    }
+  }, [isAdmin, adminLoading, navigate, toast]);
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+  useEffect(() => {
+    if (isAdmin) {
+      fetchFootage();
+      
+      const channel = supabase
+        .channel('footage-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'footage_uploads'
+          },
+          () => {
+            fetchFootage();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [isAdmin]);
 
   const fetchFootage = async () => {
     try {
@@ -75,10 +91,8 @@ const AdminFootage = () => {
   const processWithAI = async (footageId: string, caseId: string, videoUrl: string) => {
     setProcessing(footageId);
     try {
-      // Simulate AI processing (replace with actual AI logic later)
       await new Promise(resolve => setTimeout(resolve, 3000));
       
-      // Mock: Create some dummy matches
       const numMatches = Math.floor(Math.random() * 5);
       for (let i = 0; i < numMatches; i++) {
         const { error: matchError } = await supabase
@@ -93,7 +107,6 @@ const AdminFootage = () => {
         if (matchError) console.error('Error creating match:', matchError);
       }
 
-      // Update footage status
       const { error: updateError } = await supabase
         .from('footage_uploads')
         .update({ 
@@ -150,7 +163,7 @@ const AdminFootage = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'done':
-        return <Badge className="bg-success text-success-foreground">Done</Badge>;
+        return <Badge className="bg-green-500/20 text-green-400">Done</Badge>;
       case 'processing':
         return <Badge variant="secondary">Processing</Badge>;
       default:
@@ -168,14 +181,32 @@ const AdminFootage = () => {
     done: footage.filter(f => f.status === 'done').length,
   };
 
-  if (loading) {
+  if (adminLoading || loading) {
     return (
       <div className="min-h-screen bg-background">
         <Navigation />
         <div className="container mx-auto px-4 py-8">
           <div className="flex justify-center items-center h-64">
-            <div className="text-muted-foreground">Loading footage...</div>
+            <div className="text-muted-foreground">Loading...</div>
           </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <div className="container mx-auto px-4 py-8">
+          <Card>
+            <CardContent className="py-12 text-center">
+              <ShieldAlert className="h-12 w-12 mx-auto mb-4 text-destructive" />
+              <h2 className="text-xl font-bold mb-2">Access Denied</h2>
+              <p className="text-muted-foreground">You need admin privileges to access this page.</p>
+            </CardContent>
+          </Card>
         </div>
         <Footer />
       </div>
@@ -203,9 +234,9 @@ const AdminFootage = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Pending</p>
-                  <p className="text-2xl font-bold text-warning">{stats.pending}</p>
+                  <p className="text-2xl font-bold text-yellow-500">{stats.pending}</p>
                 </div>
-                <Video className="w-8 h-8 text-warning" />
+                <Video className="w-8 h-8 text-yellow-500" />
               </div>
             </CardContent>
           </Card>
@@ -227,9 +258,9 @@ const AdminFootage = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Completed</p>
-                  <p className="text-2xl font-bold text-success">{stats.done}</p>
+                  <p className="text-2xl font-bold text-green-500">{stats.done}</p>
                 </div>
-                <CheckCircle className="w-8 h-8 text-success" />
+                <CheckCircle className="w-8 h-8 text-green-500" />
               </div>
             </CardContent>
           </Card>

@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Search, Heart, MapPin } from 'lucide-react';
+import { Menu, X, Heart, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAdmin } from '@/hooks/useAdmin';
 
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
+  const { isAdmin } = useAdmin();
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -19,9 +21,9 @@ const Navigation = () => {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    localStorage.removeItem('isAdmin');
     navigate('/');
   };
+
   return (
     <header className="bg-background/95 backdrop-blur-sm border-b border-border sticky top-0 z-50 shadow-soft">
       <nav className="container mx-auto px-4 py-4">
@@ -51,12 +53,18 @@ const Navigation = () => {
             <Link to="/dashboard" className="text-foreground hover:text-primary transition-colors">
               Dashboard
             </Link>
-            <Link to="/admin/matches" className="text-foreground hover:text-primary transition-colors">
-              Admin Matches
-            </Link>
-            <Link to="/admin/footage" className="text-foreground hover:text-primary transition-colors">
-              Admin Footage
-            </Link>
+            {isAdmin && (
+              <>
+                <Link to="/admin/matches" className="text-foreground hover:text-primary transition-colors flex items-center gap-1">
+                  <Shield className="w-4 h-4" />
+                  Admin Matches
+                </Link>
+                <Link to="/admin/footage" className="text-foreground hover:text-primary transition-colors flex items-center gap-1">
+                  <Shield className="w-4 h-4" />
+                  Admin Footage
+                </Link>
+              </>
+            )}
             <Link to="/legal-help" className="text-foreground hover:text-primary transition-colors">
               Legal Help
             </Link>
@@ -126,20 +134,26 @@ const Navigation = () => {
               >
                 Dashboard
               </Link>
-              <Link
-                to="/admin/matches"
-                className="text-foreground hover:text-primary transition-colors py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Admin Matches
-              </Link>
-              <Link
-                to="/admin/footage"
-                className="text-foreground hover:text-primary transition-colors py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Admin Footage
-              </Link>
+              {isAdmin && (
+                <>
+                  <Link
+                    to="/admin/matches"
+                    className="text-foreground hover:text-primary transition-colors py-2 flex items-center gap-1"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Shield className="w-4 h-4" />
+                    Admin Matches
+                  </Link>
+                  <Link
+                    to="/admin/footage"
+                    className="text-foreground hover:text-primary transition-colors py-2 flex items-center gap-1"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Shield className="w-4 h-4" />
+                    Admin Footage
+                  </Link>
+                </>
+              )}
               <Link
                 to="/legal-help"
                 className="text-foreground hover:text-primary transition-colors py-2"

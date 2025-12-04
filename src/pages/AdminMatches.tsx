@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Match } from '@/types/FaceMatch';
+import { useNavigate } from 'react-router-dom';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,32 +12,85 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, XCircle, Eye, Filter } from 'lucide-react';
+import { useAdmin } from '@/hooks/useAdmin';
+import { CheckCircle, XCircle, Eye, Filter, ShieldAlert, User } from 'lucide-react';
+
+interface MatchWithCase {
+  id: string;
+  case_id: string;
+  frame_timestamp: number;
+  confidence: number;
+  processed_at: string;
+  status: 'pending' | 'verified' | 'rejected';
+  admin_comment?: string;
+  thumbnail_url?: string;
+  frame_url?: string;
+  cases?: {
+    name: string;
+    photo_url: string | null;
+  };
+}
 
 const AdminMatches = () => {
-  const [matches, setMatches] = useState<Match[]>([]);
+  const [matches, setMatches] = useState<MatchWithCase[]>([]);
   const [loading, setLoading] = useState(true);
   const [confidenceFilter, setConfidenceFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [reviewingMatch, setReviewingMatch] = useState<Match | null>(null);
+  const [reviewingMatch, setReviewingMatch] = useState<MatchWithCase | null>(null);
   const [reviewComment, setReviewComment] = useState('');
   const { toast } = useToast();
+  const { isAdmin, loading: adminLoading } = useAdmin();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetchMatches();
-  }, []);
+    if (!adminLoading && !isAdmin) {
+      toast({
+        title: 'Access Denied',
+        description: 'You need admin privileges to access this page',
+        variant: 'destructive',
+      });
+      navigate('/');
+    }
+  }, [isAdmin, adminLoading, navigate, toast]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchMatches();
+    }
+  }, [isAdmin]);
 
   const fetchMatches = async () => {
     try {
-      const { data, error } = await supabase
+      // First fetch matches
+      const { data: matchesData, error: matchesError } = await supabase
         .from('matches')
         .select('*')
         .order('processed_at', { ascending: false });
 
-      if (error) throw error;
-      setMatches((data || []).map(match => ({
+      if (matchesError) throw matchesError;
+
+      // Get unique case_ids
+      const caseIds = [...new Set((matchesData || []).map(m => m.case_id))];
+      
+      // Fetch cases for those IDs
+      let casesMap: Record<string, { name: string; photo_url: string | null }> = {};
+      if (caseIds.length > 0) {
+        const { data: casesData } = await supabase
+          .from('cases')
+          .select('id, name, photo_url')
+          .in('id', caseIds);
+        
+        casesMap = (casesData || []).reduce((acc, c) => {
+          acc[c.id] = { name: c.name, photo_url: c.photo_url };
+          return acc;
+        }, {} as Record<string, { name: string; photo_url: string | null }>);
+      }
+
+      // Combine data
+      setMatches((matchesData || []).map(match => ({
         ...match,
-        status: match.status as 'pending' | 'verified' | 'rejected'
+        status: match.status as 'pending' | 'verified' | 'rejected',
+        cases: casesMap[match.case_id]
       })));
     } catch (error) {
       console.error('Error fetching matches:', error);
@@ -63,7 +116,6 @@ const AdminMatches = () => {
 
       if (error) throw error;
 
-      // Update local state
       setMatches(prev => prev.map(match => 
         match.id === matchId 
           ? { ...match, status, admin_comment: comment }
@@ -93,7 +145,7 @@ const AdminMatches = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'verified':
-        return <Badge className="bg-success text-success-foreground">Verified</Badge>;
+        return <Badge className="bg-green-500/20 text-green-400">Verified</Badge>;
       case 'rejected':
         return <Badge variant="destructive">Rejected</Badge>;
       default:
@@ -111,14 +163,32 @@ const AdminMatches = () => {
 
   const stats = getStatusStats();
 
-  if (loading) {
+  if (adminLoading || loading) {
     return (
       <div className="min-h-screen bg-background">
         <Navigation />
         <div className="container mx-auto px-4 py-8">
           <div className="flex justify-center items-center h-64">
-            <div className="text-muted-foreground">Loading matches...</div>
+            <div className="text-muted-foreground">Loading...</div>
           </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <div className="container mx-auto px-4 py-8">
+          <Card>
+            <CardContent className="py-12 text-center">
+              <ShieldAlert className="h-12 w-12 mx-auto mb-4 text-destructive" />
+              <h2 className="text-xl font-bold mb-2">Access Denied</h2>
+              <p className="text-muted-foreground">You need admin privileges to access this page.</p>
+            </CardContent>
+          </Card>
         </div>
         <Footer />
       </div>
@@ -146,9 +216,9 @@ const AdminMatches = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Pending Review</p>
-                  <p className="text-2xl font-bold text-warning">{stats.pending}</p>
+                  <p className="text-2xl font-bold text-yellow-500">{stats.pending}</p>
                 </div>
-                <Eye className="w-8 h-8 text-warning" />
+                <Eye className="w-8 h-8 text-yellow-500" />
               </div>
             </CardContent>
           </Card>
@@ -158,9 +228,9 @@ const AdminMatches = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Verified Matches</p>
-                  <p className="text-2xl font-bold text-success">{stats.verified}</p>
+                  <p className="text-2xl font-bold text-green-500">{stats.verified}</p>
                 </div>
-                <CheckCircle className="w-8 h-8 text-success" />
+                <CheckCircle className="w-8 h-8 text-green-500" />
               </div>
             </CardContent>
           </Card>
@@ -232,30 +302,47 @@ const AdminMatches = () => {
               <Card key={match.id}>
                 <CardContent className="p-6">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3">
-                        <h3 className="font-semibold">Case ID: {match.case_id}</h3>
-                        {getStatusBadge(match.status)}
+                    <div className="flex items-start gap-4">
+                      {/* Reference Photo Thumbnail */}
+                      <div className="w-16 h-20 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                        {match.cases?.photo_url ? (
+                          <img 
+                            src={match.cases.photo_url} 
+                            alt="Reference" 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <User className="w-6 h-6 text-muted-foreground" />
+                          </div>
+                        )}
                       </div>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
-                        <div>
-                          <span className="font-medium">Confidence:</span> {Math.round(match.confidence * 100)}%
+                      
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                          <h3 className="font-semibold">{match.cases?.name || 'Unknown Case'}</h3>
+                          {getStatusBadge(match.status)}
                         </div>
-                        <div>
-                          <span className="font-medium">Timestamp:</span> {match.frame_timestamp}s
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
+                          <div>
+                            <span className="font-medium">Confidence:</span> {Math.round(match.confidence * 100)}%
+                          </div>
+                          <div>
+                            <span className="font-medium">Timestamp:</span> {match.frame_timestamp}s
+                          </div>
+                          <div>
+                            <span className="font-medium">Processed:</span> {new Date(match.processed_at).toLocaleDateString()}
+                          </div>
+                          <div>
+                            <span className="font-medium">Match ID:</span> {match.id.slice(0, 8)}...
+                          </div>
                         </div>
-                        <div>
-                          <span className="font-medium">Processed:</span> {new Date(match.processed_at).toLocaleDateString()}
-                        </div>
-                        <div>
-                          <span className="font-medium">Match ID:</span> {match.id.slice(0, 8)}...
-                        </div>
+                        {match.admin_comment && (
+                          <div className="mt-2 p-3 bg-muted rounded-md">
+                            <p className="text-sm"><span className="font-medium">Admin Comment:</span> {match.admin_comment}</p>
+                          </div>
+                        )}
                       </div>
-                      {match.admin_comment && (
-                        <div className="mt-2 p-3 bg-muted rounded-md">
-                          <p className="text-sm"><span className="font-medium">Admin Comment:</span> {match.admin_comment}</p>
-                        </div>
-                      )}
                     </div>
                     
                     {match.status === 'pending' && (
@@ -273,16 +360,75 @@ const AdminMatches = () => {
                               Review
                             </Button>
                           </DialogTrigger>
-                          <DialogContent>
+                          <DialogContent className="max-w-2xl">
                             <DialogHeader>
                               <DialogTitle>Review Match</DialogTitle>
                             </DialogHeader>
                             <div className="space-y-4">
-                              <div>
-                                <p><strong>Case ID:</strong> {match.case_id}</p>
-                                <p><strong>Confidence:</strong> {Math.round(match.confidence * 100)}%</p>
-                                <p><strong>Frame Timestamp:</strong> {match.frame_timestamp}s</p>
+                              {/* Side-by-side Image Comparison */}
+                              <div className="grid grid-cols-2 gap-4">
+                                {/* Reference Photo */}
+                                <div>
+                                  <p className="text-sm font-medium mb-2 text-center">Reference Photo</p>
+                                  <div className="aspect-[3/4] bg-muted rounded-lg overflow-hidden border-2 border-primary">
+                                    {match.cases?.photo_url ? (
+                                      <img 
+                                        src={match.cases.photo_url} 
+                                        alt="Reference" 
+                                        className="w-full h-full object-cover"
+                                      />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center">
+                                        <User className="w-12 h-12 text-muted-foreground" />
+                                      </div>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-center mt-1 text-muted-foreground">
+                                    {match.cases?.name || 'Unknown'}
+                                  </p>
+                                </div>
+                                
+                                {/* Detected Match */}
+                                <div>
+                                  <p className="text-sm font-medium mb-2 text-center">Detected Match</p>
+                                  <div className="aspect-[3/4] bg-muted rounded-lg overflow-hidden border-2 border-green-500">
+                                    {match.thumbnail_url || match.frame_url ? (
+                                      <img 
+                                        src={match.thumbnail_url || match.frame_url} 
+                                        alt="Detected" 
+                                        className="w-full h-full object-cover"
+                                      />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center flex-col gap-2">
+                                        <User className="w-12 h-12 text-muted-foreground" />
+                                        <span className="text-xs text-muted-foreground">No image available</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-center mt-1 text-muted-foreground">
+                                    Frame {match.frame_timestamp}s
+                                  </p>
+                                </div>
                               </div>
+                              
+                              {/* Match Details */}
+                              <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+                                <div className="flex justify-between">
+                                  <span className="text-sm text-muted-foreground">Confidence</span>
+                                  <span className={`font-bold ${match.confidence >= 0.85 ? 'text-green-500' : match.confidence >= 0.7 ? 'text-yellow-500' : 'text-red-500'}`}>
+                                    {Math.round(match.confidence * 100)}%
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-sm text-muted-foreground">Frame Timestamp</span>
+                                  <span className="font-medium">{match.frame_timestamp}s</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-sm text-muted-foreground">Case ID</span>
+                                  <span className="font-mono text-xs">{match.case_id}</span>
+                                </div>
+                              </div>
+                              
                               <div>
                                 <Label htmlFor="comment">Admin Comment</Label>
                                 <Textarea
@@ -303,7 +449,7 @@ const AdminMatches = () => {
                                   Mark as False Match
                                 </Button>
                                 <Button
-                                  className="bg-success hover:bg-success/90"
+                                  className="bg-green-600 hover:bg-green-700"
                                   onClick={() => {
                                     updateMatchStatus(match.id, 'verified', reviewComment);
                                     setReviewingMatch(null);
